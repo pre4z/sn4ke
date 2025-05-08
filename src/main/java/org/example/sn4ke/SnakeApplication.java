@@ -87,6 +87,7 @@ public class SnakeApplication extends Application {
     }
 
     private void startGameLoop(Scene scene) {
+        gameOverDisplay.setVisible(false);
         setupControls(scene); // dis doesnt work youssef fix nu
 
         AnimationTimer gameLoop = new AnimationTimer() {
