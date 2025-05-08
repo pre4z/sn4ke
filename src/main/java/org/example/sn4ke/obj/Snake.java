@@ -43,13 +43,15 @@ public class Snake {
 
     public void setViewPos(SnakeEye newDirection) {
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastDirectionChangeTime < 150) return;
 
-        if (viewPos == null || !isOppositeDirection(viewPos, newDirection)) {
-            this.viewPos = newDirection;
-            lastDirectionChangeTime = currentTime;
+        if (this.viewPos == null || currentTime - lastDirectionChangeTime >= 150) {
+            if (!isOppositeDirection(this.viewPos, newDirection)) {
+                this.viewPos = newDirection;
+                lastDirectionChangeTime = currentTime;
+            }
         }
     }
+
 
     private boolean isOppositeDirection(SnakeEye dir1, SnakeEye dir2) {
         return (dir1 == SnakeEye.UP && dir2 == SnakeEye.DOWN) ||
