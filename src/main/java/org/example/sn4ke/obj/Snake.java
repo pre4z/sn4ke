@@ -7,36 +7,59 @@ import java.util.List;
 public class Snake {
 
     private SnakeEye viewPos;
-
     private final List<SnakeSkin> length = new ArrayList<>();
+    private long lastDirectionChangeTime = 0;
 
     public Snake() {
-        this.length.add(new SnakeSkin(5,5));
+        this.length.add(new SnakeSkin(5, 5));
+        this.viewPos = SnakeEye.RIGHT; // start direction
     }
 
-    public void move()
-    {
-        SnakeSkin skinPart = length.get(0);
-        int x = skinPart.getX();
-        int y = skinPart.getY();
+    public void move() {
+        SnakeSkin head = length.get(0);
+        int x = head.getX();
+        int y = head.getY();
 
-        switch(viewPos) {
-            case UP: y --; break;
-            case DOWN: y ++; break;
-            case LEFT: x --; break;
-            case RIGHT: x ++; break;
+        switch (viewPos) {
+            case UP:    y--; break;
+            case DOWN:  y++; break;
+            case LEFT:  x--; break;
+            case RIGHT: x++; break;
         }
 
-        //Add a new head segment at the new position
+        // Add new head and remove tail
         length.add(0, new SnakeSkin(x, y));
-
-        //Remove the last segment to maintain current length
         length.remove(length.size() - 1);
     }
 
     public void eat() {
-        length.add(new SnakeSkin(length.get(length.size() - 1).getX(),
-                length.get(length.size() - 1).getY()));
+        SnakeSkin tail = length.get(length.size() - 1);
+        length.add(new SnakeSkin(tail.getX(), tail.getY()));
+    }
+
+    public SnakeEye getViewPos() {
+        return viewPos;
+    }
+
+    public void setViewPos(SnakeEye newDirection) {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastDirectionChangeTime < 150) return;
+
+        if (viewPos == null || !isOppositeDirection(viewPos, newDirection)) {
+            this.viewPos = newDirection;
+            lastDirectionChangeTime = currentTime;
+        }
+    }
+
+    private boolean isOppositeDirection(SnakeEye dir1, SnakeEye dir2) {
+        return (dir1 == SnakeEye.UP && dir2 == SnakeEye.DOWN) ||
+                (dir1 == SnakeEye.DOWN && dir2 == SnakeEye.UP) ||
+                (dir1 == SnakeEye.LEFT && dir2 == SnakeEye.RIGHT) ||
+                (dir1 == SnakeEye.RIGHT && dir2 == SnakeEye.LEFT);
+    }
+
+    public List<SnakeSkin> getLength() {
+        return length;
     }
 
     }
