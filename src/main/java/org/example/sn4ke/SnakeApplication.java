@@ -59,10 +59,10 @@ public class SnakeApplication extends Application {
         scene.setOnKeyPressed(event -> {
             if (!gameOverDisplay.isVisible()) {
                 KeyCode code = event.getCode();
-                if (code == KeyCode.UP) snake.setViewPos(SnakeEye.UP);
-                else if (code == KeyCode.DOWN) snake.setViewPos(SnakeEye.DOWN);
-                else if (code == KeyCode.LEFT) snake.setViewPos(SnakeEye.LEFT);
-                else if (code == KeyCode.RIGHT) snake.setViewPos(SnakeEye.RIGHT);
+                if (code == KeyCode.UP || code == KeyCode.W) snake.setViewPos(SnakeEye.UP);
+                else if (code == KeyCode.DOWN || code == KeyCode.S) snake.setViewPos(SnakeEye.DOWN);
+                else if (code == KeyCode.LEFT || code == KeyCode.A) snake.setViewPos(SnakeEye.LEFT);
+                else if (code == KeyCode.RIGHT || code == KeyCode.D) snake.setViewPos(SnakeEye.RIGHT);
             }
         });
     }
