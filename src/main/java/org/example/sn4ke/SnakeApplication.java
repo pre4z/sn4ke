@@ -24,21 +24,28 @@ import java.util.List;
 
 
 public class SnakeApplication extends Application {
-
-    private Snake snake = new Snake();
+    private Snake snake; // Just the declaration
     private Food food;
     private final Text gameOverDisplay = new Text();
+    private final Text restartPrompt = new Text();
+
     private Pane gamePane = new Pane();
 
     private final List<Circle> snakeParts = new ArrayList<>();
 
     private final int tileSize = 20;
 
+    private final int width = 500;
+    private final int height = 500;
+
+
+
 
     @Override
     public void start(Stage stage) throws IOException {
+        snake = new Snake(width / tileSize, height / tileSize); // Adjusted for grid size
 
-        Scene scene = new Scene(gamePane, 500, 700);
+        Scene scene = new Scene(gamePane, width, height);
         scene.setFill(Color.BLACK);
 
         renderSnake(); // initial draw
@@ -86,9 +93,46 @@ public class SnakeApplication extends Application {
         gamePane.getChildren().addAll(snakeParts);
     }
 
+
+
     private void startGameLoop(Scene scene) {
         gameOverDisplay.setVisible(false);
+        restartPrompt.setVisible(false);
         setupControls(scene); // dis doesnt work youssef fix nu
+
+
+
+        // <editor-fold desc="Game Over Display Block + restart prompt">
+        gamePane.getChildren().add(gameOverDisplay);
+        gameOverDisplay.setText("GAME OVER");
+        gameOverDisplay.setStyle("-fx-font-size: 32;");
+        gameOverDisplay.setFill(Color.RED);
+
+        gameOverDisplay.applyCss(); // using css allows using proper formatting and using dynamic references for height and width, so text should work on any display
+        gameOverDisplay.autosize();
+
+        double textWidth = gameOverDisplay.getBoundsInLocal().getWidth();
+        double textHeight = gameOverDisplay.getBoundsInLocal().getHeight();
+
+        gameOverDisplay.setLayoutX((width - textWidth) / 2);
+        gameOverDisplay.setLayoutY((height / 2.0) - textHeight);
+
+        // Add restart prompt text
+        gamePane.getChildren().add(restartPrompt);
+        restartPrompt.setText("Press any key to restart");
+        restartPrompt.setStyle("-fx-font-size: 20;");
+        restartPrompt.setFill(Color.GRAY);
+
+        restartPrompt.applyCss();
+        restartPrompt.autosize();
+
+        double restartWidth = restartPrompt.getBoundsInLocal().getWidth();
+        double restartHeight = restartPrompt.getBoundsInLocal().getHeight();
+
+        restartPrompt.setLayoutX((width - restartWidth) / 2);
+        restartPrompt.setLayoutY((height / 2.0) + restartHeight / 4);
+        // </editor-fold>
+
 
         AnimationTimer gameLoop = new AnimationTimer() {
             private long lastUpdate = 0;
@@ -96,7 +140,19 @@ public class SnakeApplication extends Application {
             @Override
             public void handle(long now) {
                 if (now - lastUpdate >= 200_000_000) { // 200ms :O
-                    snake.move();
+
+                    boolean hitWall = snake.move();
+
+                    if (hitWall) {
+                        this.stop(); // Stop the game loop
+                        renderSnake(); // Render final frame
+                        gamePane.getChildren().removeAll(snakeParts); // Remove snake
+                        gameOverDisplay.setVisible(true); // Show game over message
+                        restartPrompt.setVisible(true); // show restart prompt
+                        return;
+
+                    }
+
                     renderSnake();
                     lastUpdate = now;
                 }
