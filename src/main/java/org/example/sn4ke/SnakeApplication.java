@@ -95,7 +95,7 @@ public class SnakeApplication extends Application {
     }
 
     private void renderSnake() {
-        gamePane.getChildren().removeAll(snakeParts);
+        gamePane.getChildren().removeAll(snakeParts); // Remove old snake visuals
         snakeParts.clear();
 
         if (snake == null || snake.getLength() == null) return;
@@ -112,7 +112,7 @@ public class SnakeApplication extends Application {
     }
 
     private void startGameLoop(Scene scene) {
-        gameOverDisplay.setVisible(false);
+        gameOverDisplay.setVisible(false); // Ensure game over messages are hidden
         restartPrompt.setVisible(false);
         setupControls(scene);
 
