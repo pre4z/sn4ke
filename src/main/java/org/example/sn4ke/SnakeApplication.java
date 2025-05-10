@@ -18,58 +18,78 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Main class
- */
-
-
 public class SnakeApplication extends Application {
-    private Snake snake; // Just the declaration
+    private Snake snake;
     private Food food;
     private final Text gameOverDisplay = new Text();
     private final Text restartPrompt = new Text();
 
     private Pane gamePane = new Pane();
-
     private final List<Circle> snakeParts = new ArrayList<>();
 
     private final int tileSize = 20;
-
     private final int width = 500;
     private final int height = 500;
 
-
-
+    private AnimationTimer gameLoopInstance;
+    private Scene currentScene;
 
     @Override
     public void start(Stage stage) throws IOException {
-        snake = new Snake(width / tileSize, height / tileSize); // Adjusted for grid size
+        configureGameOverTexts(); // Sets styles
 
-        Scene scene = new Scene(gamePane, width, height);
-        scene.setFill(Color.BLACK);
-
-        renderSnake(); // initial draw
-        snake.setViewPos(SnakeEye.DOWN); // default starting direction
-
-        startGameLoop(scene);
+        currentScene = new Scene(gamePane, width, height);
+        currentScene.setFill(Color.BLACK);
 
         stage.setTitle("SN4KE");
-        stage.setScene(scene);
+        stage.setScene(currentScene);
         stage.show();
+
+        resetAndStartGame();
+    }
+
+    private void configureGameOverTexts() {
+        gameOverDisplay.setStyle("-fx-font-size: 32;");
+        gameOverDisplay.setFill(Color.RED);
+
+        restartPrompt.setStyle("-fx-font-size: 20;");
+        restartPrompt.setFill(Color.GRAY);
     }
 
     public static void main(String[] args) {
         launch();
     }
 
+    private void resetAndStartGame() {
+        if (gameLoopInstance != null) {
+            gameLoopInstance.stop();
+        }
+
+        gamePane.getChildren().clear();
+        snakeParts.clear();
+
+        snake = new Snake(width / tileSize, height / tileSize);
+        snake.setViewPos(SnakeEye.DOWN);
+
+        // Add text nodes to the scene. startGameLoop handles content and positioning.
+        gamePane.getChildren().addAll(gameOverDisplay, restartPrompt);
+
+        renderSnake();
+        startGameLoop(currentScene);
+    }
+
     private void setupControls(Scene scene) {
         scene.setOnKeyPressed(event -> {
+            if (snake == null) return; // Prevent NullPointerException if snake isn't initialized
             if (!gameOverDisplay.isVisible()) {
                 KeyCode code = event.getCode();
                 if (code == KeyCode.UP || code == KeyCode.W) snake.setViewPos(SnakeEye.UP);
                 else if (code == KeyCode.DOWN || code == KeyCode.S) snake.setViewPos(SnakeEye.DOWN);
                 else if (code == KeyCode.LEFT || code == KeyCode.A) snake.setViewPos(SnakeEye.LEFT);
                 else if (code == KeyCode.RIGHT || code == KeyCode.D) snake.setViewPos(SnakeEye.RIGHT);
+            } else { // Game is over (gameOverDisplay is visible)
+                // Any key press triggers a restart
+                resetAndStartGame();
             }
         });
     }
@@ -78,88 +98,75 @@ public class SnakeApplication extends Application {
         gamePane.getChildren().removeAll(snakeParts);
         snakeParts.clear();
 
+        if (snake == null || snake.getLength() == null) return;
+
         for (int i = 0; i < snake.getLength().size(); i++) {
             SnakeSkin s = snake.getLength().get(i);
-
-            double radius = (i == 0  ? tileSize / 1.2 : tileSize / 2.0);
-
-            Circle c = new Circle(radius, Color.BLUEVIOLET); // youssef vil gerne ha at den er pink?
+            double radius = (i == 0 ? tileSize / 1.2 : tileSize / 2.0);
+            Circle c = new Circle(radius, Color.BLUEVIOLET);
             c.setLayoutX(s.getX() * tileSize + tileSize / 2.0);
             c.setLayoutY(s.getY() * tileSize + tileSize / 2.0);
-
             snakeParts.add(c);
         }
-
         gamePane.getChildren().addAll(snakeParts);
     }
-
-
 
     private void startGameLoop(Scene scene) {
         gameOverDisplay.setVisible(false);
         restartPrompt.setVisible(false);
-        setupControls(scene); // dis doesnt work youssef fix nu
+        setupControls(scene);
 
+        // <editor-fold desc="Game Over Display Block + restart prompt: Set Text and Position">
 
-
-        // <editor-fold desc="Game Over Display Block + restart prompt">
-        gamePane.getChildren().add(gameOverDisplay);
+        // Set text content for gameOverDisplay
         gameOverDisplay.setText("GAME OVER");
-        gameOverDisplay.setStyle("-fx-font-size: 32;");
-        gameOverDisplay.setFill(Color.RED);
 
-        gameOverDisplay.applyCss(); // using css allows using proper formatting and using dynamic references for height and width, so text should work on any display
+        gameOverDisplay.applyCss();
         gameOverDisplay.autosize();
-
         double textWidth = gameOverDisplay.getBoundsInLocal().getWidth();
         double textHeight = gameOverDisplay.getBoundsInLocal().getHeight();
-
         gameOverDisplay.setLayoutX((width - textWidth) / 2);
         gameOverDisplay.setLayoutY((height / 2.0) - textHeight);
 
-        // Add restart prompt text
-        gamePane.getChildren().add(restartPrompt);
+        // Set text content for restartPrompt
         restartPrompt.setText("Press any key to restart");
-        restartPrompt.setStyle("-fx-font-size: 20;");
-        restartPrompt.setFill(Color.GRAY);
 
         restartPrompt.applyCss();
         restartPrompt.autosize();
-
         double restartWidth = restartPrompt.getBoundsInLocal().getWidth();
         double restartHeight = restartPrompt.getBoundsInLocal().getHeight();
-
         restartPrompt.setLayoutX((width - restartWidth) / 2);
         restartPrompt.setLayoutY((height / 2.0) + restartHeight / 4);
         // </editor-fold>
 
-
-        AnimationTimer gameLoop = new AnimationTimer() {
+        gameLoopInstance = new AnimationTimer() {
             private long lastUpdate = 0;
 
             @Override
             public void handle(long now) {
-                if (now - lastUpdate >= 200_000_000) { // 200ms :O
+                if (gameOverDisplay.isVisible() && this != gameLoopInstance) {
+                    this.stop();
+                    return;
+                }
+
+                if (now - lastUpdate >= 200_000_000) {
+                    if (snake == null) return;
 
                     boolean hitWall = snake.move();
 
                     if (hitWall) {
-                        this.stop(); // Stop the game loop
-                        renderSnake(); // Render final frame
-                        gamePane.getChildren().removeAll(snakeParts); // Remove snake
-                        gameOverDisplay.setVisible(true); // Show game over message
-                        restartPrompt.setVisible(true); // show restart prompt
+                        this.stop();
+                        gamePane.getChildren().removeAll(snakeParts);
+                        snakeParts.clear();
+                        gameOverDisplay.setVisible(true);
+                        restartPrompt.setVisible(true);
                         return;
-
                     }
-
                     renderSnake();
                     lastUpdate = now;
                 }
             }
         };
-
-        gameLoop.start();
+        gameLoopInstance.start();
     }
-
 }
