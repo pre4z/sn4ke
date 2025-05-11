@@ -59,9 +59,10 @@ public class Snake {
     }
 
     public void eat() {
-        SnakeSkin tail = length.get(length.size() - 1);
-        length.add(new SnakeSkin(tail.getX(), tail.getY()));
+        SnakeSkin last = length.get(length.size() - 1);
+        length.add(new SnakeSkin(last.getX(), last.getY()));
     }
+
 
     public SnakeEye getViewPos() {
         return viewPos;

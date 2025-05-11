@@ -3,6 +3,8 @@ package org.example.sn4ke;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -23,6 +25,8 @@ public class SnakeApplication extends Application {
     private Food food;
     private final Text gameOverDisplay = new Text();
     private final Text restartPrompt = new Text();
+
+    private int gameScore;
 
     private Pane gamePane = new Pane();
     private final List<Circle> snakeParts = new ArrayList<>();
@@ -61,6 +65,7 @@ public class SnakeApplication extends Application {
     }
 
     private void resetAndStartGame() {
+
         if (gameLoopInstance != null) {
             gameLoopInstance.stop();
         }
@@ -73,6 +78,7 @@ public class SnakeApplication extends Application {
 
         // Add text nodes to the scene. startGameLoop handles content and positioning.
         gamePane.getChildren().addAll(gameOverDisplay, restartPrompt);
+        food = new Food(gamePane);
 
         renderSnake();
         startGameLoop(currentScene);
@@ -100,6 +106,7 @@ public class SnakeApplication extends Application {
 
         if (snake == null || snake.getLength() == null) return;
 
+        // Loop through the snake's body segments and render them
         for (int i = 0; i < snake.getLength().size(); i++) {
             SnakeSkin s = snake.getLength().get(i);
             double radius = (i == 0 ? tileSize / 1.2 : tileSize / 2.0);
@@ -108,10 +115,41 @@ public class SnakeApplication extends Application {
             c.setLayoutY(s.getY() * tileSize + tileSize / 2.0);
             snakeParts.add(c);
         }
+
         gamePane.getChildren().addAll(snakeParts);
     }
 
+
+    /**
+     * detectAppleCollision detects (as the name already tells you) when the snake scores an apple, it then goes on to make the snake grow
+     */
+
+    private void detectAppleCollision() {
+        if (snake == null || food == null) return;
+
+        SnakeSkin head = snake.getLength().get(0);
+        double headCenterX = head.getX() * tileSize + tileSize / 2.0;
+        double headCenterY = head.getY() * tileSize + tileSize / 2.0;
+
+        ImageView appleView = food.getAppleImage();
+        double appleX = appleView.getLayoutX();
+        double appleY = appleView.getLayoutY();
+        double appleWidth = appleView.getImage().getWidth();
+        double appleHeight = appleView.getImage().getHeight();
+        double appleCenterX = appleX + appleWidth / 2.0;
+        double appleCenterY = appleY + appleHeight / 2.0;
+
+        double distance = Math.hypot(headCenterX - appleCenterX, headCenterY - appleCenterY);
+        if (distance < tileSize / 1.5) {
+            snake.eat();
+            gameScore++;
+            gamePane.getChildren().remove(appleView);
+            food.relocate(); // Respawns and re-adds the apple
+        }
+    }
+
     private void startGameLoop(Scene scene) {
+
         gameOverDisplay.setVisible(false); // Ensure game over messages are hidden
         restartPrompt.setVisible(false);
         setupControls(scene);
@@ -162,6 +200,9 @@ public class SnakeApplication extends Application {
                         restartPrompt.setVisible(true);
                         return;
                     }
+
+                    detectAppleCollision();
+
                     renderSnake();
                     lastUpdate = now;
                 }
