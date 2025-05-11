@@ -10,14 +10,12 @@ public class Snake {
     private long lastDirectionChangeTime = 0;
     private final long directionChangeCooldown = 100; // ms, adjust as needed
 
-    private final int gameGridWidth;  // Width of the game area in grid cells
-    private final int gameGridHeight; // Height of the game area in grid cells
-    private final int tileSize;       // Size of each grid cell in pixels
+    private final int gameGridWidth;
+    private final int gameGridHeight;
 
-    public Snake(int gameGridWidth, int gameGridHeight, int tileSize) {
+    public Snake(int gameGridWidth, int gameGridHeight) {
         this.gameGridWidth = gameGridWidth;
         this.gameGridHeight = gameGridHeight;
-        this.tileSize = tileSize;
 
         // Initial snake position (e.g., center) and length
         int startX = gameGridWidth / 2;
@@ -48,20 +46,13 @@ public class Snake {
             case RIGHT: newHeadX++; break;
         }
 
-        // 1. Check for wall collision
+        // Check for wall collision
         if (newHeadX < 0 || newHeadX >= gameGridWidth || newHeadY < 0 || newHeadY >= gameGridHeight) {
             return MoveResult.HIT_WALL;
         }
 
-        // 2. Check for food collision
-        // Determine the grid cell the food's center occupies
-        double foodCenterX = food.getX() + food.getWidth() / 2.0;
-        double foodCenterY = food.getY() + food.getHeight() / 2.0;
-
-        int foodGridX = (int) (foodCenterX / tileSize);
-        int foodGridY = (int) (foodCenterY / tileSize);
-
-        boolean ateFood = (newHeadX == foodGridX && newHeadY == foodGridY);
+        // Check for food collision
+        boolean ateFood = (newHeadX == food.getGridX() && newHeadY == food.getGridY());
 
         if (ateFood) {
             length.add(0, new SnakeSkin(newHeadX, newHeadY)); // Add new head
@@ -70,14 +61,16 @@ public class Snake {
             return MoveResult.ATE_FOOD;
         }
 
-        // 3. Check for self-collision (if not eating food)
-        for (SnakeSkin segment : length) {
+        // Check for self-collision (if not eating food)
+        // Iterate from the second segment (index 1) to avoid checking the head against itself
+        for (int i = 1; i < length.size(); i++) {
+            SnakeSkin segment = length.get(i);
             if (newHeadX == segment.getX() && newHeadY == segment.getY()) {
                 return MoveResult.HIT_SELF;
             }
         }
 
-        // 4. Move snake normally (add new head, remove tail)
+        // Move snake normally (add new head, remove tail)
         length.add(0, new SnakeSkin(newHeadX, newHeadY));
         length.remove(length.size() - 1);
 
@@ -86,7 +79,7 @@ public class Snake {
 
     public void setViewPos(SnakeEye newDirection) {
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastDirectionChangeTime < directionChangeCooldown) { // Use defined cooldown
+        if (currentTime - lastDirectionChangeTime < directionChangeCooldown) {
             return;
         }
         // Prevent immediate 180-degree turns
