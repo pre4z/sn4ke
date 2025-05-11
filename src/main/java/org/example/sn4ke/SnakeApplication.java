@@ -3,19 +3,13 @@ package org.example.sn4ke;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import org.example.sn4ke.obj.Food;
-import org.example.sn4ke.obj.Snake;
-import org.example.sn4ke.obj.SnakeEye;
-import org.example.sn4ke.obj.SnakeSkin;
-
+import org.example.sn4ke.obj.*; // Import all from obj package
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,16 +25,20 @@ public class SnakeApplication extends Application {
     private Pane gamePane = new Pane();
     private final List<Circle> snakeParts = new ArrayList<>();
 
-    private final int tileSize = 20;
-    private final int width = 500;
-    private final int height = 500;
+    private final int tileSize = 20; // This is grid cell size
+    private final int width = 500;   // Pixel width of game area
+    private final int height = 500;  // Pixel height of game area
+
+    // Calculate grid dimensions based on pane size and tile size
+    private final int gridWidth = width / tileSize;
+    private final int gridHeight = height / tileSize;
 
     private AnimationTimer gameLoopInstance;
     private Scene currentScene;
 
     @Override
     public void start(Stage stage) throws IOException {
-        configureGameOverTexts(); // Sets styles
+        configureGameOverTexts();
 
         currentScene = new Scene(gamePane, width, height);
         currentScene.setFill(Color.BLACK);
@@ -65,100 +63,71 @@ public class SnakeApplication extends Application {
     }
 
     private void resetAndStartGame() {
-
         if (gameLoopInstance != null) {
             gameLoopInstance.stop();
         }
 
-        gamePane.getChildren().clear();
+        gamePane.getChildren().clear(); // Clear everything from pane
         snakeParts.clear();
+        gameScore = 0; // Reset score
 
-        snake = new Snake(width / tileSize, height / tileSize);
-        snake.setViewPos(SnakeEye.DOWN);
+        // Initialize Snake with grid dimensions and tileSize
+        snake = new Snake(gridWidth, gridHeight, tileSize);
 
-        // Add text nodes to the scene. startGameLoop handles content and positioning.
-        gamePane.getChildren().addAll(gameOverDisplay, restartPrompt);
+        // Initialize Food (it adds itself to gamePane)
         food = new Food(gamePane);
 
-        renderSnake();
+        // Add text nodes back (they were cleared)
+        gamePane.getChildren().addAll(gameOverDisplay, restartPrompt);
+
+        renderSnake(); // Initial render
         startGameLoop(currentScene);
     }
 
     private void setupControls(Scene scene) {
         scene.setOnKeyPressed(event -> {
-            if (snake == null) return; // Prevent NullPointerException if snake isn't initialized
-            if (!gameOverDisplay.isVisible()) {
+            if (snake == null) return;
+            if (!gameOverDisplay.isVisible()) { // Game is active
                 KeyCode code = event.getCode();
                 if (code == KeyCode.UP || code == KeyCode.W) snake.setViewPos(SnakeEye.UP);
                 else if (code == KeyCode.DOWN || code == KeyCode.S) snake.setViewPos(SnakeEye.DOWN);
                 else if (code == KeyCode.LEFT || code == KeyCode.A) snake.setViewPos(SnakeEye.LEFT);
                 else if (code == KeyCode.RIGHT || code == KeyCode.D) snake.setViewPos(SnakeEye.RIGHT);
-            } else { // Game is over (gameOverDisplay is visible)
-                // Any key press triggers a restart
-                resetAndStartGame();
+            } else { // Game is over
+                resetAndStartGame(); // Any key press restarts
             }
         });
     }
 
     private void renderSnake() {
-        gamePane.getChildren().removeAll(snakeParts); // Remove old snake visuals
+        gamePane.getChildren().removeAll(snakeParts);
         snakeParts.clear();
 
         if (snake == null || snake.getLength() == null) return;
 
-        // Loop through the snake's body segments and render them
         for (int i = 0; i < snake.getLength().size(); i++) {
             SnakeSkin s = snake.getLength().get(i);
-            double radius = (i == 0 ? tileSize / 1.2 : tileSize / 2.0);
+            double radius = (i == 0 ? tileSize / 1.2 : tileSize / 2.0); // Head slightly bigger
             Circle c = new Circle(radius, Color.BLUEVIOLET);
+            // Center the circle in the tile
             c.setLayoutX(s.getX() * tileSize + tileSize / 2.0);
             c.setLayoutY(s.getY() * tileSize + tileSize / 2.0);
             snakeParts.add(c);
         }
-
         gamePane.getChildren().addAll(snakeParts);
-    }
-
-
-    /**
-     * detectAppleCollision detects (as the name already tells you) when the snake scores an apple, it then goes on to make the snake grow
-     */
-
-    private void detectAppleCollision() {
-        if (snake == null || food == null) return;
-
-        SnakeSkin head = snake.getLength().get(0);
-        double headCenterX = head.getX() * tileSize + tileSize / 2.0;
-        double headCenterY = head.getY() * tileSize + tileSize / 2.0;
-
-        ImageView appleView = food.getAppleImage();
-        double appleX = appleView.getLayoutX();
-        double appleY = appleView.getLayoutY();
-        double appleWidth = appleView.getImage().getWidth();
-        double appleHeight = appleView.getImage().getHeight();
-        double appleCenterX = appleX + appleWidth / 2.0;
-        double appleCenterY = appleY + appleHeight / 2.0;
-
-        double distance = Math.hypot(headCenterX - appleCenterX, headCenterY - appleCenterY);
-        if (distance < tileSize / 1.5) {
-            snake.eat();
-            gameScore++;
-            gamePane.getChildren().remove(appleView);
-            food.relocate(); // Respawns and re-adds the apple
+        // Ensure food is drawn on top of snake parts if there's overlap
+        if (food != null && food.getFoodObject() != null) {
+            food.getFoodObject().toFront();
         }
     }
 
     private void startGameLoop(Scene scene) {
-
-        gameOverDisplay.setVisible(false); // Ensure game over messages are hidden
+        gameOverDisplay.setVisible(false);
         restartPrompt.setVisible(false);
-        setupControls(scene);
+        setupControls(scene); // Ensure controls are set for the current scene
 
         // <editor-fold desc="Game Over Display Block + restart prompt: Set Text and Position">
-
-        // Set text content for gameOverDisplay
         gameOverDisplay.setText("GAME OVER");
-
         gameOverDisplay.applyCss();
         gameOverDisplay.autosize();
         double textWidth = gameOverDisplay.getBoundsInLocal().getWidth();
@@ -166,9 +135,7 @@ public class SnakeApplication extends Application {
         gameOverDisplay.setLayoutX((width - textWidth) / 2);
         gameOverDisplay.setLayoutY((height / 2.0) - textHeight);
 
-        // Set text content for restartPrompt
         restartPrompt.setText("Press any key to restart");
-
         restartPrompt.applyCss();
         restartPrompt.autosize();
         double restartWidth = restartPrompt.getBoundsInLocal().getWidth();
@@ -179,29 +146,33 @@ public class SnakeApplication extends Application {
 
         gameLoopInstance = new AnimationTimer() {
             private long lastUpdate = 0;
+            // Target frame rate: e.g., 100_000_000 for 10 FPS (100ms delay), 200_000_000 for 5 FPS (200ms)
+            private final long updateInterval = 100_000_000; // Trying for 10 FPS
 
             @Override
             public void handle(long now) {
-                if (gameOverDisplay.isVisible() && this != gameLoopInstance) {
-                    this.stop();
-                    return;
-                }
+                if (now - lastUpdate >= updateInterval) { // Time-based update
+                    if (snake == null) return; // Should not happen if resetAndStartGame is correct but is here in case
 
-                if (now - lastUpdate >= 200_000_000) {
-                    if (snake == null) return;
+                    // Move snake and get result
+                    MoveResult result = snake.move(food);
 
-                    boolean hitWall = snake.move();
-
-                    if (hitWall) {
-                        this.stop();
-                        gamePane.getChildren().removeAll(snakeParts);
-                        snakeParts.clear();
-                        gameOverDisplay.setVisible(true);
-                        restartPrompt.setVisible(true);
-                        return;
+                    switch (result) {
+                        case ATE_FOOD:
+                            gameScore++;
+                            // Growth and food relocation are handled by Snake and Food classes
+                            System.out.println("Score: " + gameScore); // Print score for now
+                            break;
+                        case HIT_WALL:
+                        case HIT_SELF:
+                            this.stop(); // Stop this timer instance
+                            gameOverDisplay.setVisible(true);
+                            restartPrompt.setVisible(true);
+                            return; // Exit handle method for this frame
+                        case MOVED_OKAY:
+                            // All good, proceed to render
+                            break;
                     }
-
-                    detectAppleCollision();
 
                     renderSnake();
                     lastUpdate = now;

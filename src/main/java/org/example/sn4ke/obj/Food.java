@@ -10,7 +10,7 @@ import javafx.util.Duration;
 import java.util.Random;
 
 public class Food {
-    private final ImageView imageView;
+    private final ImageView foodObject;
     private final double imageWidth = 30;
     private final double imageHeight = 35;
     private final Random random = new Random();
@@ -19,39 +19,76 @@ public class Food {
 
     public Food(Pane gamePane) {
         this.gamePane = gamePane;
-        imageView = new ImageView();
-        imageView.setFitWidth(imageWidth);
-        imageView.setFitHeight(imageHeight);
-        imageView.setPreserveRatio(false);
+        foodObject = new ImageView();
+        foodObject.setFitWidth(imageWidth);
+        foodObject.setFitHeight(imageHeight);
+        foodObject.setPreserveRatio(false);
 
         // Load image
-        Image image = new Image(getClass().getResource("/img/apple.png").toExternalForm());
-        imageView.setImage(image);
+        try {
+            Image image = new Image(getClass().getResource("/img/apple.png").toExternalForm());
+            foodObject.setImage(image);
+        } catch (NullPointerException e) {
+            System.err.println("Error loading food image!");
+        }
 
-        gamePane.getChildren().add(imageView);
+
+        gamePane.getChildren().add(foodObject);
         relocate();
     }
 
     public void relocate() {
-        // Cancel any running timer
         if (lifetimeTimer != null) {
             lifetimeTimer.stop();
         }
 
-        // Place the apple at a new random location
-        double maxX = gamePane.getWidth() - imageWidth;
-        double maxY = gamePane.getHeight() - imageHeight;
-        imageView.setLayoutX(random.nextDouble() * maxX);
-        imageView.setLayoutY(random.nextDouble() * maxY);
+        double FmaxX = gamePane.getWidth() - imageWidth;
+        double FmaxY = gamePane.getHeight() - imageHeight;
 
-        // auto respawn
+        // Ensure max coordinates are not negative if pane is smaller than food
+        // Minor bug handling to avoid it
+        FmaxX = Math.max(0, FmaxX);
+        FmaxY = Math.max(0, FmaxY);
+
+        foodObject.setLayoutX(random.nextDouble() * FmaxX);
+        foodObject.setLayoutY(random.nextDouble() * FmaxY);
+
         lifetimeTimer = new Timeline(new KeyFrame(Duration.seconds(6), e -> relocate()));
         lifetimeTimer.setCycleCount(1);
         lifetimeTimer.play();
     }
 
+    /**
+     * Called when the snake eats the food.
+     * Stops the current timer and relocates the food immediately.
+     */
+    public void wasEaten() {
+        if (lifetimeTimer != null) {
+            lifetimeTimer.stop();
+        }
+        relocate(); // Relocate immediately
+    }
 
-    public ImageView getAppleImage() {
-        return imageView;
+    // Renamed from getAppleImage to getFoodObject for readability
+    public ImageView getFoodObject() {
+        return foodObject;
+    }
+
+    public double getX() {
+        return foodObject.getLayoutX();
+    }
+
+    public double getY() {
+        return foodObject.getLayoutY();
+    }
+
+    // Returns the actual displayed width
+    public double getWidth() {
+        return imageWidth; // As set by setFitWidth
+    }
+
+    // Returns the actual displayed height
+    public double getHeight() {
+        return imageHeight; // As set by setFitHeight
     }
 }
