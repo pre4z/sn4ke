@@ -11,18 +11,29 @@ import java.util.Random;
 
 public class Food {
     private final ImageView foodObject;
-    private final double imageWidth = 30;
-    private final double imageHeight = 35;
+    private final int imageSize;
     private final Random random = new Random();
-    private final Pane gamePane;
     private Timeline lifetimeTimer;
 
-    public Food(Pane gamePane) {
-        this.gamePane = gamePane;
+    // Add grid dimensions and tileSize to constructor
+    private final int gridWidth;
+    private final int gridHeight;
+    private final int tileSize;
+
+    // Current grid position of the food
+    private int currentGridX;
+    private int currentGridY;
+
+    public Food(Pane gamePane, int gridWidth, int gridHeight, int tileSize) {
+        this.gridWidth = gridWidth;
+        this.gridHeight = gridHeight;
+        this.tileSize = tileSize;
+        this.imageSize = tileSize; // Set image size to tile size so it fits
+
         foodObject = new ImageView();
-        foodObject.setFitWidth(imageWidth);
-        foodObject.setFitHeight(imageHeight);
-        foodObject.setPreserveRatio(false);
+        foodObject.setFitWidth(imageSize);
+        foodObject.setFitHeight(imageSize);
+        foodObject.setPreserveRatio(true); // Preserve ratio to prevent distortion if not square AKA THE APPLE STAYS AN APPLE
 
         // Load image
         try {
@@ -32,9 +43,8 @@ public class Food {
             System.err.println("Error loading food image!");
         }
 
-
         gamePane.getChildren().add(foodObject);
-        relocate();
+        relocate(); // Call relocate to set initial position
     }
 
     public void relocate() {
@@ -42,17 +52,16 @@ public class Food {
             lifetimeTimer.stop();
         }
 
-        double FmaxX = gamePane.getWidth() - imageWidth;
-        double FmaxY = gamePane.getHeight() - imageHeight;
+        // Generate random grid coordinates (0 to gridWidth-1, 0 to gridHeight-1)
+        currentGridX = random.nextInt(gridWidth);
+        currentGridY = random.nextInt(gridHeight);
 
-        // Ensure max coordinates are not negative if pane is smaller than food
-        // Minor bug handling to avoid it
-        FmaxX = Math.max(0, FmaxX);
-        FmaxY = Math.max(0, FmaxY);
+        // Set layout based on grid coordinates multiplied by tileSize
+        // This places the food image exactly at the top-left corner of a grid cell
+        foodObject.setLayoutX(currentGridX * tileSize);
+        foodObject.setLayoutY(currentGridY * tileSize);
 
-        foodObject.setLayoutX(random.nextDouble() * FmaxX);
-        foodObject.setLayoutY(random.nextDouble() * FmaxY);
-
+        // Reset and start the lifetime timer for the new food position
         lifetimeTimer = new Timeline(new KeyFrame(Duration.seconds(6), e -> relocate()));
         lifetimeTimer.setCycleCount(1);
         lifetimeTimer.play();
@@ -69,26 +78,16 @@ public class Food {
         relocate(); // Relocate immediately
     }
 
-    // Renamed from getAppleImage to getFoodObject for readability
     public ImageView getFoodObject() {
         return foodObject;
     }
 
-    public double getX() {
-        return foodObject.getLayoutX();
+    // Return the food's grid coordinates directly for collision detection
+    public int getGridX() {
+        return currentGridX;
     }
 
-    public double getY() {
-        return foodObject.getLayoutY();
-    }
-
-    // Returns the actual displayed width
-    public double getWidth() {
-        return imageWidth; // As set by setFitWidth
-    }
-
-    // Returns the actual displayed height
-    public double getHeight() {
-        return imageHeight; // As set by setFitHeight
+    public int getGridY() {
+        return currentGridY;
     }
 }
