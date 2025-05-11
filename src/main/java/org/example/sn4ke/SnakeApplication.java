@@ -75,6 +75,7 @@ public class SnakeApplication extends Application {
 
     private void updateScoreDisplay() {
         scoreText.setText("Score: " + gameScore + "\nHighscore: " + highScore);
+        scoreText.setStyle("-fx-font-weight: bold");
         scoreText.setLayoutX(10);
         scoreText.setLayoutY(25);
     }
@@ -218,7 +219,6 @@ public class SnakeApplication extends Application {
                         case MOVED_OKAY:
                             break;
                     }
-
                     renderSnake();
                     lastUpdate = now;
                 }

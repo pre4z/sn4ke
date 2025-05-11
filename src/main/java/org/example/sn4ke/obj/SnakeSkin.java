@@ -18,6 +18,7 @@ public class SnakeSkin {
      * @param x xPos
      * @param y yPos
      */
+
     public SnakeSkin(int x, int y) {
         this.x = x;
         this.y = y;

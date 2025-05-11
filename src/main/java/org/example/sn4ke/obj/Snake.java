@@ -32,7 +32,7 @@ public class Snake {
      */
     public MoveResult move(Food food) {
         if (length.isEmpty()) {
-            return MoveResult.HIT_SELF; // Should not happen
+            return MoveResult.HIT_SELF; // Should not happen (edit: definitely)
         }
 
         SnakeSkin currentHead = length.get(0);
