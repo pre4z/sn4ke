@@ -30,9 +30,9 @@ public class SnakeApplication extends Application {
     private final List<Circle> snakeParts = new ArrayList<>();
     private Canvas boardCanvas;
 
-    private final int tileSize = 40; // Corrected from previous request
-    private final int width = 600;  // Corrected from previous request
-    private final int height = 600; // Corrected from previous request
+    private final int tileSize = 40;
+    private final int width = 600;
+    private final int height = 600;
 
     private final int gridWidth = width / tileSize; // calculates the playing board width
     private final int gridHeight = height / tileSize; // ditto - height
